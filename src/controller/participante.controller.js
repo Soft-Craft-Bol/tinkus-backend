@@ -86,7 +86,19 @@ exports.register = async (req, res) => {
 // ✅ Obtener todos los participantes
 exports.getAll = async (req, res) => {
   try {
-    const { search, estado } = req.query;
+    const { 
+      search, 
+      estado, 
+      carrera,
+      page = 1, 
+      limit = 10,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+    
+    const pageNum = parseInt(page);
+    const limitNum = parseInt(limit);
+    const skip = (pageNum - 1) * limitNum;
     
     let where = {};
     
@@ -95,7 +107,8 @@ exports.getAll = async (req, res) => {
       where.OR = [
         { nombres: { contains: search, mode: 'insensitive' } },
         { apellidos: { contains: search, mode: 'insensitive' } },
-        { ci: { contains: search } }
+        { ci: { contains: search } },
+        { carrera: { contains: search, mode: 'insensitive' } }
       ];
     }
     
@@ -104,6 +117,15 @@ exports.getAll = async (req, res) => {
       where.estado = estado;
     }
 
+    // Filtro por carrera
+    if (carrera) {
+      where.carrera = { contains: carrera, mode: 'insensitive' };
+    }
+
+    // Obtener el total de registros
+    const total = await prisma.participante.count({ where });
+
+    // Obtener participantes con paginación
     const participantes = await prisma.participante.findMany({
       where,
       include: {
@@ -120,8 +142,10 @@ exports.getAll = async (req, res) => {
         }
       },
       orderBy: {
-        createdAt: 'desc'
-      }
+        [sortBy]: sortOrder
+      },
+      skip,
+      take: limitNum
     });
 
     // Agregar información calculada
@@ -131,13 +155,22 @@ exports.getAll = async (req, res) => {
       porcentaje_pagado: ((participante.monto_pagado / MONTO_TOTAL) * 100).toFixed(1)
     }));
 
-    res.json(participantesConInfo);
+    res.json({
+      participantes: participantesConInfo,
+      pagination: {
+        currentPage: pageNum,
+        totalPages: Math.ceil(total / limitNum),
+        totalItems: total,
+        itemsPerPage: limitNum,
+        hasNext: pageNum < Math.ceil(total / limitNum),
+        hasPrev: pageNum > 1
+      }
+    });
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: 'Error al obtener participantes' });
   }
 };
-
 // ✅ Obtener participante por ID
 exports.getById = async (req, res) => {
   try {
