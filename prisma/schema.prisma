@@ -1,0 +1,53 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id          Int      @id @default(autoincrement())
+  nombre      String
+  usuario     String   @unique
+  email       String  @unique
+  password    String
+  rol         String   @default("tesorero")
+  activo      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  participantes Participante[]
+}
+
+model Participante {
+  id            Int      @id @default(autoincrement())
+  nombres       String
+  apellidos     String
+  carrera       String?
+  ci            String   @unique
+  celular       String?
+  tipo_pago     String   @default("cuotas") // cuotas o total
+  monto_total   Float
+  monto_pagado  Float    @default(0)
+  estado        String   @default("pendiente")
+  usuarioId     Int?
+  usuario       Usuario? @relation(fields: [usuarioId], references: [id])
+  pagos         Pago[]
+  createdAt     DateTime @default(now())
+}
+
+model Pago {
+  id             Int       @id @default(autoincrement())
+  participanteId Int
+  monto          Float
+  fecha          DateTime  @default(now())
+  metodo_pago    String    @default("efectivo") // efectivo o qr
+  observacion    String?
+  participante   Participante @relation(fields: [participanteId], references: [id])
+}
