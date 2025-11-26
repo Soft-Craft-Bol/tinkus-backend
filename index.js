@@ -17,7 +17,7 @@ const allowedOrigins = [
 
  app.use(cors({
     origin: function (origin, callback) {
-        console.log('Request origin:', origin);  // Añadir para depurar
+        console.log('Request origin:', origin);  
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
@@ -32,5 +32,5 @@ const allowedOrigins = [
 app.use('/', routes);
 
 app.listen(port, () => {
-    console.log(`Example app listening at http://localhost:${port}`);
+    console.log(`http://localhost:${port}`);
 });
